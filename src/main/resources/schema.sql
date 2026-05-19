@@ -1,10 +1,11 @@
-CREATE TABLE user
+CREATE TABLE users
 (
     id       BIGINT       NOT NULL AUTO_INCREMENT,
     login_id VARCHAR(20)  NOT NULL,
     name     VARCHAR(20)  NOT NULL,
     password VARCHAR(255) NOT NULL,
     role     VARCHAR(20)  NOT NULL,
+    PRIMARY KEY (id)
 );
 
 CREATE TABLE theme
