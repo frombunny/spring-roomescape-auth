@@ -24,6 +24,10 @@ public class User {
         return new User(null, loginId, password, name, role);
     }
 
+    public static User restore(Long id, String name, String loginId, String password, Role role) {
+        return new User(id, loginId, password, name, role);
+    }
+
     private static void validate(String name, String loginId, String password, Role role) {
         validateName(name);
         validateLoginId(loginId);
