@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>예약하기 · RoomEscape</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles/common.css" />
+  <link rel="stylesheet" href="/styles/reservation.css" />
+</head>
+<body>
+  <nav class="top-nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">RoomEscape</a>
+      <div class="nav-links">
+        <a href="/">홈</a>
+        <a href="/reserve" class="active">예약하기</a>
+        <a href="/admin">관리자</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="reservation-page">
+    <h1 class="page-title">예약하기</h1>
+
+    <form data-role="reservation-form">
+      <section class="card">
+        <div class="card-label">테마</div>
+        <select id="themeSelect" name="themeId">
+          <option value="">테마를 선택하세요</option>
+        </select>
+      </section>
+
+      <section class="card">
+        <div class="card-label">예약자 이름</div>
+        <input id="nameInput" name="name" class="text-input" type="text" placeholder="이름을 입력하세요" maxlength="20" />
+      </section>
+
+      <section class="card">
+        <div class="card-label">날짜</div>
+        <input id="dateInput" name="date" type="date" />
+      </section>
+
+      <section class="card">
+        <div class="card-label">시간</div>
+        <div class="slot-grid" data-role="slot-grid">
+          <div class="slot-empty">테마와 날짜를 먼저 선택하세요.</div>
+        </div>
+      </section>
+
+      <button class="btn-submit" data-role="submit-button" type="submit" disabled>예약 확정</button>
+    </form>
+
+    <section class="reservation-list-section" data-role="user-reservations">
+      <div class="card">
+        <h2 class="section-title">내 예약</h2>
+        <form class="lookup-form" data-role="reservation-search-form">
+          <input id="reservationSearchName" class="text-input" type="text" placeholder="예약자 이름" maxlength="20" />
+          <button class="btn-inline" type="submit">조회</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table class="reservation-table">
+            <thead>
+              <tr>
+                <th>예약자</th>
+                <th>테마</th>
+                <th>날짜</th>
+                <th>시간</th>
+                <th>상태</th>
+                <th>수정</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody data-role="user-reservation-table">
+              <tr class="empty-row"><td colspan="7">예약자 이름으로 조회하세요.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" data-role="toast"></div>
+
+  <script type="module" src="/js/reservation/main.js"></script>
+</body>
+</html>

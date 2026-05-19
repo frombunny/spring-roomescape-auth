@@ -1,0 +1,71 @@
+package roomescape.repository.fake;
+
+import java.time.LocalTime;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
+import roomescape.domain.ReservationTime;
+import roomescape.repository.ReservationTimeRepository;
+
+public class FakeReservationTimeRepository implements ReservationTimeRepository {
+
+    private final List<ReservationTime> reservationTimes = new CopyOnWriteArrayList<>();
+    private final AtomicLong counter = new AtomicLong(1);
+
+    @Override
+    public ReservationTime save(ReservationTime reservationTime) {
+        ReservationTime saved = ReservationTime.restore(
+                counter.getAndIncrement(),
+                reservationTime.getStartAt(),
+                reservationTime.isActive()
+        );
+        reservationTimes.add(saved);
+        return saved;
+    }
+
+    @Override
+    public void update(ReservationTime reservationTime) {
+        for (int i = 0; i < reservationTimes.size(); i++) {
+            ReservationTime savedTime = reservationTimes.get(i);
+
+            if (savedTime.getId().equals(reservationTime.getId())) {
+                reservationTimes.set(i, reservationTime);
+                return;
+            }
+        }
+    }
+
+    @Override
+    public Optional<ReservationTime> findById(Long id) {
+        return reservationTimes.stream()
+                .filter(time -> time.getId().equals(id))
+                .findFirst();
+    }
+
+    @Override
+    public boolean existsActiveByStartAt(LocalTime time) {
+        return reservationTimes.stream()
+                .anyMatch(reservationTime
+                        -> reservationTime.getStartAt().equals(time) && reservationTime.isActive());
+    }
+
+    @Override
+    public List<ReservationTime> findAllByPaging(int page, int size) {
+        int offset = page * size;
+
+        return reservationTimes.stream()
+                .sorted(Comparator.comparing(ReservationTime::getId).reversed())
+                .skip(offset)
+                .limit(size)
+                .toList();
+    }
+
+    @Override
+    public List<ReservationTime> findTimeSlotsForReservationStatus() {
+        return reservationTimes.stream()
+                .sorted(Comparator.comparing(ReservationTime::getStartAt).thenComparing(ReservationTime::getId))
+                .toList();
+    }
+}
