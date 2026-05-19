@@ -1,3 +1,12 @@
+CREATE TABLE user
+(
+    id       BIGINT       NOT NULL AUTO_INCREMENT,
+    login_id VARCHAR(20)  NOT NULL,
+    name     VARCHAR(20)  NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role     VARCHAR(20)  NOT NULL,
+);
+
 CREATE TABLE theme
 (
     id                  BIGINT       NOT NULL AUTO_INCREMENT,
