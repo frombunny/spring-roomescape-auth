@@ -71,9 +71,13 @@ class ReservationControllerTest extends BaseControllerUnitTest {
         when(reservationService.reserve(any(ReservationRequest.class))).thenReturn(expected);
 
         // when & then
-        ReservationResponse response = RestAssuredMockMvc.given().spec(defaultSpec()).log().all().body(request).when()
-                .post("/api/reservations").then().log().all().status(HttpStatus.CREATED)
-                .header("Location", containsString("/api/reservations/1")).extract().as(new TypeRef<>() {
+        ReservationResponse response = RestAssuredMockMvc.given().spec(defaultSpec())
+                .log().all().body(request)
+                .when().post("/api/reservations")
+                .then().log().all()
+                .status(HttpStatus.CREATED)
+                .header("Location", containsString("/api/reservations/1"))
+                .extract().as(new TypeRef<>() {
                 });
 
         assertThat(response).isEqualTo(expected);
@@ -87,8 +91,12 @@ class ReservationControllerTest extends BaseControllerUnitTest {
         when(reservationService.getReservationsByUser(any(String.class))).thenReturn(expected.responses());
 
         // when & then
-        ReservationResponses response = RestAssuredMockMvc.given().spec(defaultSpec()).log().all()
-                .queryParam("name", "웨지").when().get("/api/reservations").then().log().all().status(HttpStatus.OK)
+        ReservationResponses response = RestAssuredMockMvc.given().spec(defaultSpec())
+                .log().all()
+                .queryParam("name", "웨지")
+                .when().get("/api/reservations")
+                .then().log().all()
+                .status(HttpStatus.OK)
                 .extract().as(new TypeRef<>() {
                 });
 

@@ -27,7 +27,7 @@ class UserServiceTest {
         UserRequest request = new UserRequest("바니", "bunny", "1234", Role.ROLE_USER);
 
         // when
-        UserResponse response = userService.save(request);
+        UserResponse response = userService.register(request);
 
         // then
         assertThat(response).extracting(UserResponse::id, UserResponse::name, UserResponse::loginId)

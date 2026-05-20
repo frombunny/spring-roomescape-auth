@@ -10,7 +10,6 @@ public abstract class BaseControllerUnitTest {
 
     protected void mockMvcSetting(WebApplicationContext webApplicationContext) {
         RestAssuredMockMvc.webAppContextSetup(webApplicationContext);
-
     }
 
     protected MockMvcRequestSpecification adminSpec() {

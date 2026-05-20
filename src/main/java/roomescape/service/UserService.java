@@ -16,7 +16,7 @@ public class UserService {
     private final UserRepository userRepository;
 
     @Transactional
-    public UserResponse save(UserRequest request) {
+    public UserResponse register(UserRequest request) {
         User user = User.create(request.name(), request.loginId(), request.password(), request.role());
         return UserResponse.from(userRepository.save(user));
     }
