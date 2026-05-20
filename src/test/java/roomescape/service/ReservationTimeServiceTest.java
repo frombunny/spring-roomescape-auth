@@ -109,7 +109,7 @@ class ReservationTimeServiceTest {
         // given
         ReservationTime time = reservationTimeRepository.save(ReservationTimeFixture.createDefaultReservationTime());
         Theme theme = ThemeFixture.createThemeWithId();
-        reservationRepository.save(ReservationFixture.createDefaultReservationWithName("바니", theme, time));
+        reservationRepository.save(ReservationFixture.createDefaultReservationWithUser("바니", theme, time));
 
         // when & then
         assertThatThrownBy(() -> reservationTimeService.deactivate(time.getId())).isInstanceOf(

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import roomescape.domain.ReservationStatus;
+import roomescape.domain.Role;
 
 @Component
 public class ReservationDataSource {
@@ -17,6 +18,7 @@ public class ReservationDataSource {
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
 
         jdbcTemplate.execute("TRUNCATE TABLE theme");
+        jdbcTemplate.execute("TRUNCATE TABLE user");
         jdbcTemplate.execute("TRUNCATE TABLE reservation_time");
         jdbcTemplate.execute("TRUNCATE TABLE reservation");
 
@@ -25,8 +27,14 @@ public class ReservationDataSource {
 
     public void clearId() {
         jdbcTemplate.execute("ALTER TABLE theme ALTER COLUMN id RESTART WITH 1");
+        jdbcTemplate.execute("ALTER TABLE user ALTER COLUMN id RESTART WITH 1");
         jdbcTemplate.execute("ALTER TABLE reservation_time ALTER COLUMN id RESTART WITH 1");
         jdbcTemplate.execute("ALTER TABLE reservation ALTER COLUMN id RESTART WITH 1");
+    }
+
+    public void insertUser(String name, String loginId, String password, Role role) {
+        jdbcTemplate.update("INSERT INTO users (name, login_id, password, role) VALUES (?,?,?,?)",
+                name, loginId, password, role);
     }
 
     public void insertTheme(String name, String description, String thumbnailImageUrl) {
@@ -34,9 +42,9 @@ public class ReservationDataSource {
                 name, description, thumbnailImageUrl);
     }
 
-    public void insertReservedReservation(String name, LocalDate date, Long themeId, Long timeId) {
-        jdbcTemplate.update("INSERT INTO reservation (name, date, theme_id, time_id, status) VALUES (?, ?, ?, ?, ?)",
-                name, date, themeId, timeId, ReservationStatus.RESERVED.toString());
+    public void insertReservedReservation(Long userId, LocalDate date, Long themeId, Long timeId) {
+        jdbcTemplate.update("INSERT INTO reservation (user, date, theme_id, time_id, status) VALUES (?, ?, ?, ?, ?)",
+                userId, date, themeId, timeId, ReservationStatus.RESERVED.toString());
     }
 
     public void insertReservationTime(LocalTime reservationTime) {

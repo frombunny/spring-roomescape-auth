@@ -7,7 +7,11 @@ public final class UserFixture {
     private UserFixture(){
     }
 
-    public static User createDefaultUser(){
+    public static User createDefaultUser() {
         return User.create("바니", "bunny", "1234", Role.ROLE_USER);
+    }
+
+    public static User createAnotherUser() {
+        return User.create("네오", "neo", "1234", Role.ROLE_USER);
     }
 }

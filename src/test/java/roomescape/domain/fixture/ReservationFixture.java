@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationTime;
 import roomescape.domain.Theme;
+import roomescape.domain.User;
 
 public final class ReservationFixture {
 
@@ -53,15 +54,15 @@ public final class ReservationFixture {
         );
     }
 
-    public static Reservation createDefaultReservationWithName(String name) {
+    public static Reservation createDefaultReservationWithUser(User user) {
         LocalDate date = LocalDate.now().plusDays(1);
         Theme theme = ThemeFixture.createDefaultTheme();
         ReservationTime time = ReservationTimeFixture.createDefaultReservationTime();
-        return Reservation.create(name, date, theme, time);
+        return Reservation.create(user, date, theme, time);
     }
 
-    public static Reservation createDefaultReservationWithName(String name, Theme theme, ReservationTime time) {
+    public static Reservation createDefaultReservationWithUser(User user, Theme theme, ReservationTime time) {
         LocalDate date = LocalDate.now().plusDays(1);
-        return Reservation.create(name, date, theme, time);
+        return Reservation.create(user, date, theme, time);
     }
 }

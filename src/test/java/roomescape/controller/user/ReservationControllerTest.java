@@ -26,7 +26,9 @@ import roomescape.controller.BaseControllerUnitTest;
 import roomescape.controller.fixture.ReservationRequestFixture;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationStatus;
+import roomescape.domain.User;
 import roomescape.domain.fixture.ReservationFixture;
+import roomescape.domain.fixture.UserFixture;
 import roomescape.service.ReservationService;
 import roomescape.web.controller.user.ReservationController;
 import roomescape.web.dto.reservation.ReservationCancelRequest;
@@ -55,8 +57,12 @@ class ReservationControllerTest extends BaseControllerUnitTest {
     void 예약_요청_시_형식_검증에_실패하면_예외가_발생한다(ReservationRequest body, String exceptionMessage) {
         // given
         // when & then
-        RestAssuredMockMvc.given().spec(defaultSpec()).log().all().body(body).when().post("/api/reservations").then()
-                .log().all().status(HttpStatus.BAD_REQUEST).body(containsString(exceptionMessage));
+        RestAssuredMockMvc.given().spec(defaultSpec())
+                .log().all().body(body)
+                .when().post("/api/reservations")
+                .then().log().all()
+                .status(HttpStatus.BAD_REQUEST)
+                .body(containsString(exceptionMessage));
     }
 
     @Test
@@ -86,14 +92,15 @@ class ReservationControllerTest extends BaseControllerUnitTest {
     @Test
     void 예약_목록_조회_요청에_성공하면_200_OK와_예약_목록이_반환된다() {
         // given
-        Reservation reservation = ReservationFixture.createDefaultReservationWithName("웨지");
+        User user = UserFixture.createDefaultUser();
+        Reservation reservation = ReservationFixture.createDefaultReservationWithUser(user);
         ReservationResponses expected = new ReservationResponses(List.of(ReservationResponse.from(reservation)));
         when(reservationService.getReservationsByUser(any(String.class))).thenReturn(expected.responses());
 
         // when & then
         ReservationResponses response = RestAssuredMockMvc.given().spec(defaultSpec())
                 .log().all()
-                .queryParam("name", "웨지")
+                .queryParam("userId", 1L)
                 .when().get("/api/reservations")
                 .then().log().all()
                 .status(HttpStatus.OK)

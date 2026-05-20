@@ -16,10 +16,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationStatus;
 import roomescape.domain.ReservationTime;
+import roomescape.domain.Role;
 import roomescape.domain.Theme;
+import roomescape.domain.User;
 import roomescape.domain.fixture.ReservationFixture;
 import roomescape.domain.fixture.ReservationTimeFixture;
 import roomescape.domain.fixture.ThemeFixture;
+import roomescape.domain.fixture.UserFixture;
 import roomescape.global.exception.AlreadyCanceledReservationException;
 import roomescape.global.exception.DuplicateEntityException;
 import roomescape.global.exception.EntityNotFoundException;
@@ -28,9 +31,11 @@ import roomescape.global.exception.InactiveException;
 import roomescape.repository.ReservationRepository;
 import roomescape.repository.ReservationTimeRepository;
 import roomescape.repository.ThemeRepository;
+import roomescape.repository.UserRepository;
 import roomescape.repository.fake.FakeReservationRepository;
 import roomescape.repository.fake.FakeReservationTimeRepository;
 import roomescape.repository.fake.FakeThemeRepository;
+import roomescape.repository.fake.FakeUserRepository;
 import roomescape.web.dto.reservation.ReservationCancelRequest;
 import roomescape.web.dto.reservation.ReservationModifyRequest;
 import roomescape.web.dto.reservation.ReservationRequest;
@@ -38,12 +43,14 @@ import roomescape.web.dto.reservation.ReservationResponse;
 import roomescape.web.dto.reservationTime.ReservationTimeResponse;
 import roomescape.web.dto.theme.ReservationTimeStatusResponse;
 import roomescape.web.dto.theme.ThemeResponse;
+import roomescape.web.dto.user.UserResponse;
 
 class ReservationServiceTest {
 
     private ReservationRepository reservationRepository;
     private ReservationTimeRepository reservationTimeRepository;
     private ThemeRepository themeRepository;
+    private UserRepository userRepository;
     private ReservationService reservationService;
 
     static Stream<Arguments> provideReservationStatusScenarios() {
@@ -57,6 +64,7 @@ class ReservationServiceTest {
         this.reservationRepository = new FakeReservationRepository();
         this.reservationTimeRepository = new FakeReservationTimeRepository();
         this.themeRepository = new FakeThemeRepository();
+        this.userRepository = new FakeUserRepository();
         this.reservationService = new ReservationService(reservationRepository, reservationTimeRepository,
                 themeRepository);
     }
@@ -66,8 +74,9 @@ class ReservationServiceTest {
         // given
         ReservationTime time = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(10, 0)));
         Theme theme = themeRepository.save(ThemeFixture.createDefaultTheme());
+        User user = userRepository.save(UserFixture.createDefaultUser());
         LocalDate reservationDate = LocalDate.now().plusDays(1);
-        ReservationRequest request = new ReservationRequest("이프", reservationDate, theme.getId(), time.getId());
+        ReservationRequest request = new ReservationRequest(user.getId(), reservationDate, theme.getId(), time.getId());
 
         // when
         ReservationResponse response = reservationService.reserve(request);
@@ -75,15 +84,16 @@ class ReservationServiceTest {
         // then
         ReservationTimeResponse timeResponse = ReservationTimeResponse.from(time);
         ThemeResponse themeResponse = ThemeResponse.from(theme);
-        assertThat(response).extracting(ReservationResponse::id, ReservationResponse::name, ReservationResponse::date,
+        assertThat(response).extracting(ReservationResponse::id, ReservationResponse::user, ReservationResponse::date,
                         ReservationResponse::time, ReservationResponse::theme, ReservationResponse::status)
-                .containsExactly(1L, "이프", reservationDate, timeResponse, themeResponse, ReservationStatus.RESERVED);
+                .containsExactly(1L, user, reservationDate, timeResponse, themeResponse, ReservationStatus.RESERVED);
     }
 
     @Test
     void 존재하지_않는_테마_정보로_예약하면_예외가_발생한다() {
         // given
-        ReservationRequest request = new ReservationRequest("이프", LocalDate.now().plusDays(1), 1L, 1L);
+        User user = userRepository.save(UserFixture.createDefaultUser());
+        ReservationRequest request = new ReservationRequest(user.getId(),LocalDate.now().plusDays(1), 1L, 1L);
 
         // when & then
         assertThatThrownBy(() -> reservationService.reserve(request)).isInstanceOf(EntityNotFoundException.class)
@@ -93,7 +103,8 @@ class ReservationServiceTest {
     @Test
     void 존재하지_않는_시간_정보로_예약하면_예외가_발생한다() {
         // given
-        ReservationRequest request = new ReservationRequest("이프", LocalDate.now().plusDays(1), 1L, 1L);
+        User user = userRepository.save(UserFixture.createDefaultUser());
+        ReservationRequest request = new ReservationRequest(user.getId(), LocalDate.now().plusDays(1), 1L, 1L);
         themeRepository.save(ThemeFixture.createDefaultTheme());
 
         // when & then
@@ -106,8 +117,9 @@ class ReservationServiceTest {
         // given
         Theme theme = themeRepository.save(ThemeFixture.createDefaultTheme());
         ReservationTime time = reservationTimeRepository.save(ReservationTimeFixture.createDefaultReservationTime());
+        User user = userRepository.save(UserFixture.createDefaultUser());
 
-        Reservation existingReservation = ReservationFixture.createDefaultReservationWithName("기존 예약자", theme, time);
+        Reservation existingReservation = ReservationFixture.createDefaultReservationWithUser(user, theme, time);
         reservationRepository.save(existingReservation);
 
         LocalDate date = existingReservation.getDate();
@@ -122,10 +134,10 @@ class ReservationServiceTest {
     @Test
     void 비활성화된_테마로_예약하면_예외가_발생한다() {
         // given
-        Theme inactiveTheme = ThemeFixture.createDefaultTheme().deactivate();
-        Theme savedTheme = themeRepository.save(inactiveTheme);
+        Theme inactiveTheme = themeRepository.save(ThemeFixture.createDefaultTheme().deactivate());
         ReservationTime time = reservationTimeRepository.save(ReservationTimeFixture.createDefaultReservationTime());
-        ReservationRequest request = new ReservationRequest("웨지", LocalDate.now().plusDays(1), savedTheme.getId(),
+        User user = userRepository.save(UserFixture.createDefaultUser());
+        ReservationRequest request = new ReservationRequest(user.getId(), LocalDate.now().plusDays(1), inactiveTheme.getId(),
                 time.getId());
 
         // when & then
@@ -139,7 +151,9 @@ class ReservationServiceTest {
         Theme theme = themeRepository.save(ThemeFixture.createDefaultTheme());
         ReservationTime inactiveTime = ReservationTime.create(LocalTime.of(10, 0)).deactivate();
         ReservationTime savedTime = reservationTimeRepository.save(inactiveTime);
-        ReservationRequest request = new ReservationRequest("웨지", LocalDate.now().plusDays(1), theme.getId(),
+        User user = userRepository.save(UserFixture.createDefaultUser());
+
+        ReservationRequest request = new ReservationRequest(user.getId(), LocalDate.now().plusDays(1), theme.getId(),
                 savedTime.getId());
 
         // when & then
@@ -150,8 +164,10 @@ class ReservationServiceTest {
     @Test
     void 페이징_정보에_따른_모든_예약_목록을_조회한다() {
         // given
-        reservationRepository.save(ReservationFixture.createDefaultReservationWithName("이프"));
-        reservationRepository.save(ReservationFixture.createDefaultReservationWithName("바니"));
+        User user = userRepository.save(UserFixture.createDefaultUser());
+        User anotherUser = userRepository.save(UserFixture.createAnotherUser());
+        reservationRepository.save(ReservationFixture.createDefaultReservationWithUser(user));
+        reservationRepository.save(ReservationFixture.createDefaultReservationWithUser(anotherUser));
 
         // when
         List<ReservationResponse> responses = reservationService.getAllReservationsByPaging(0, 10);
@@ -161,36 +177,41 @@ class ReservationServiceTest {
     }
 
     @Test
-    void 사용자_이름으로_예약_내역을_조회한다() {
+    void 사용자_정보로_예약_내역을_조회한다() {
         // given
-        Reservation reservation = reservationRepository.save(ReservationFixture.createDefaultReservationWithName("바니"));
-        reservationRepository.save(ReservationFixture.createDefaultReservationWithName("웨지"));
+        User user = userRepository.save(UserFixture.createDefaultUser());
+        User anotherUser = userRepository.save(UserFixture.createAnotherUser());
+        Reservation reservation = reservationRepository.save(ReservationFixture.createDefaultReservationWithUser(user));
+        reservationRepository.save(ReservationFixture.createDefaultReservationWithUser(anotherUser));
 
         // when
-        List<ReservationResponse> response = reservationService.getReservationsByUser("바니");
+        List<ReservationResponse> response = reservationService.getReservationsByUser(user);
 
         // then
         assertThat(response).containsOnly(ReservationResponse.from(reservation));
     }
 
     @Test
-    void 사용자_이름으로_예약을_취소한다() {
+    void 사용자_정보로_예약을_취소한다() {
         // given
-        Reservation reservation = reservationRepository.save(ReservationFixture.createDefaultReservationWithName("바니"));
+        User user = userRepository.save(UserFixture.createDefaultUser());
+        Reservation reservation = reservationRepository.save(ReservationFixture.createDefaultReservationWithUser(user));
 
         // when & then
         assertThatCode(() -> reservationService.cancel(reservation.getId(),
-                new ReservationCancelRequest("바니"))).doesNotThrowAnyException();
+                new ReservationCancelRequest(user.getId()))).doesNotThrowAnyException();
     }
 
     @Test
-    void 사용자_이름이_일치하지_않는_예약을_취소하면_예외가_발생한다() {
+    void 사용자_정보와_예약자_정보가_일치하지_않는_예약을_취소하면_예외가_발생한다() {
         // given
-        Reservation reservation = reservationRepository.save(ReservationFixture.createDefaultReservationWithName("바니"));
+        User user = userRepository.save(UserFixture.createDefaultUser());
+        User anotherUser = userRepository.save(UserFixture.createAnotherUser());
+        Reservation reservation = reservationRepository.save(ReservationFixture.createDefaultReservationWithUser(user));
 
         // when & then
         assertThatThrownBy(
-                () -> reservationService.cancel(reservation.getId(), new ReservationCancelRequest("웨지"))).isInstanceOf(
+                () -> reservationService.cancel(reservation.getId(), new ReservationCancelRequest(anotherUser.getId()))).isInstanceOf(
                 ForbiddenException.class);
     }
 
@@ -200,12 +221,14 @@ class ReservationServiceTest {
         ReservationTime time = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(10, 0)));
         Theme theme = themeRepository.save(ThemeFixture.createDefaultTheme());
         LocalDate date = LocalDate.now().plusDays(1);
+        User user = userRepository.save(UserFixture.createDefaultUser());
+        User anotherUser = userRepository.save(UserFixture.createAnotherUser());
 
-        Reservation canceled = Reservation.restore(1L, "바니", date, theme, time, ReservationStatus.CANCELED);
+        Reservation canceled = Reservation.restore(1L, user, date, theme, time, ReservationStatus.CANCELED);
         reservationRepository.save(canceled);
 
         // when
-        ReservationRequest request = new ReservationRequest("웨지", date, theme.getId(), time.getId());
+        ReservationRequest request = new ReservationRequest(anotherUser.getId(), date, theme.getId(), time.getId());
 
         // then
         assertThatCode(() -> reservationService.reserve(request)).doesNotThrowAnyException();
@@ -240,8 +263,9 @@ class ReservationServiceTest {
         LocalDate date = LocalDate.now().plusDays(1);
         Theme theme = themeRepository.save(ThemeFixture.createDefaultTheme());
         ReservationTime reservedTime = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(10, 0)));
+        User user = userRepository.save(UserFixture.createDefaultUser());
         reservationTimeRepository.save(ReservationTime.create(LocalTime.of(11, 0)));
-        reservationRepository.save(Reservation.create("이프", date, theme, reservedTime));
+        reservationRepository.save(Reservation.create(user, date, theme, reservedTime));
 
         // when
         List<ReservationTimeStatusResponse> response = reservationService.getReservationStatusByTheme(theme.getId(),
@@ -284,16 +308,17 @@ class ReservationServiceTest {
     }
 
     @Test
-    void 예약을_수정한다() {
+    void 사용자_정보로_예약을_수정한다() {
         // given
         Theme theme = themeRepository.save(ThemeFixture.createDefaultTheme());
         ReservationTime originalTime = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(10, 0)));
         ReservationTime modifiedTime = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(11, 0)));
+        User user = userRepository.save(UserFixture.createAnotherUser());
 
         Reservation reservation = reservationRepository.save(
-                ReservationFixture.createDefaultReservationWithName("바니", theme, originalTime));
+                ReservationFixture.createDefaultReservationWithUser(user, theme, originalTime));
         LocalDate modifiedDate = LocalDate.now().plusDays(2);
-        ReservationModifyRequest request = new ReservationModifyRequest("바니", modifiedDate, modifiedTime.getId());
+        ReservationModifyRequest request = new ReservationModifyRequest(user.getId(), modifiedDate, modifiedTime.getId());
 
         // when
         reservationService.modify(reservation.getId(), request);
@@ -307,14 +332,16 @@ class ReservationServiceTest {
     }
 
     @Test
-    void 예약자_이름이_일치하지_않으면_예약_수정_시_예외가_발생한다() {
+    void 사용자_정보와_예약자_정보가_일치하지_않으면_예약_수정_시_예외가_발생한다() {
         // given
         Theme theme = themeRepository.save(ThemeFixture.createDefaultTheme());
         ReservationTime originalTime = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(10, 0)));
         ReservationTime modifiedTime = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(11, 0)));
+        User user = userRepository.save(UserFixture.createDefaultUser());
+        User anotherUser = userRepository.save(UserFixture.createAnotherUser());
         Reservation reservation = reservationRepository.save(
-                ReservationFixture.createDefaultReservationWithName("바니", theme, originalTime));
-        ReservationModifyRequest request = new ReservationModifyRequest("웨지", LocalDate.now().plusDays(2),
+                ReservationFixture.createDefaultReservationWithUser(user, theme, originalTime));
+        ReservationModifyRequest request = new ReservationModifyRequest(anotherUser.getId(), LocalDate.now().plusDays(2),
                 modifiedTime.getId());
 
         // when & then
@@ -328,9 +355,10 @@ class ReservationServiceTest {
         Theme theme = themeRepository.save(ThemeFixture.createDefaultTheme());
         ReservationTime originalTime = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(10, 0)));
         ReservationTime modifiedTime = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(11, 0)));
+        User user = userRepository.save(UserFixture.createDefaultUser());
         Reservation canceledReservation = reservationRepository.save(
-                ReservationFixture.createDefaultReservationWithName("바니", theme, originalTime).cancel());
-        ReservationModifyRequest request = new ReservationModifyRequest("바니", LocalDate.now().plusDays(2),
+                ReservationFixture.createDefaultReservationWithUser(user, theme, originalTime).cancel());
+        ReservationModifyRequest request = new ReservationModifyRequest(user.getId(), LocalDate.now().plusDays(2),
                 modifiedTime.getId());
 
         // when & then
@@ -344,14 +372,14 @@ class ReservationServiceTest {
         Theme theme = themeRepository.save(ThemeFixture.createDefaultTheme());
         ReservationTime originalTime = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(10, 0)));
         ReservationTime modifiedTime = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(11, 0)));
+        User user = userRepository.save(UserFixture.createDefaultUser());
         Reservation reservation = reservationRepository.save(
-                ReservationFixture.createDefaultReservationWithName("바니", theme, originalTime));
+                ReservationFixture.createDefaultReservationWithUser(user, theme, originalTime));
 
         Theme inactiveTheme = theme.deactivate();
         themeRepository.update(inactiveTheme);
-        ReservationModifyRequest request = new ReservationModifyRequest("바니", LocalDate.now().plusDays(2),
+        ReservationModifyRequest request = new ReservationModifyRequest(user.getId(), LocalDate.now().plusDays(2),
                 modifiedTime.getId());
-
         // when & then
         assertThatThrownBy(() -> reservationService.modify(reservation.getId(), request)).isInstanceOf(
                 InactiveException.class).hasMessage("비활성화 된 테마는 예약할 수 없습니다.");
@@ -364,9 +392,10 @@ class ReservationServiceTest {
         ReservationTime originalTime = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(10, 0)));
         ReservationTime inactiveTime = ReservationTime.create(LocalTime.of(11, 0)).deactivate();
         ReservationTime savedInactiveTime = reservationTimeRepository.save(inactiveTime);
+        User user = userRepository.save(UserFixture.createDefaultUser());
         Reservation reservation = reservationRepository.save(
-                ReservationFixture.createDefaultReservationWithName("바니", theme, originalTime));
-        ReservationModifyRequest request = new ReservationModifyRequest("바니", LocalDate.now().plusDays(2),
+                ReservationFixture.createDefaultReservationWithUser(user, theme, originalTime));
+        ReservationModifyRequest request = new ReservationModifyRequest(user.getId(), LocalDate.now().plusDays(2),
                 savedInactiveTime.getId());
 
         // when & then
@@ -381,11 +410,13 @@ class ReservationServiceTest {
         ReservationTime originalTime = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(10, 0)));
         ReservationTime duplicateTime = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(11, 0)));
         LocalDate duplicateDate = LocalDate.now().plusDays(2);
+        User user = userRepository.save(UserFixture.createDefaultUser());
+        User anotherUser = userRepository.save(UserFixture.createAnotherUser());
 
         Reservation reservation = reservationRepository.save(
-                ReservationFixture.createDefaultReservationWithName("바니", theme, originalTime));
-        reservationRepository.save(Reservation.create("웨지", duplicateDate, theme, duplicateTime));
-        ReservationModifyRequest request = new ReservationModifyRequest("바니", duplicateDate, duplicateTime.getId());
+                ReservationFixture.createDefaultReservationWithUser(user, theme, originalTime));
+        reservationRepository.save(Reservation.create(anotherUser, duplicateDate, theme, duplicateTime));
+        ReservationModifyRequest request = new ReservationModifyRequest(user.getId(), duplicateDate, duplicateTime.getId());
 
         // when & then
         assertThatThrownBy(() -> reservationService.modify(reservation.getId(), request)).isInstanceOf(

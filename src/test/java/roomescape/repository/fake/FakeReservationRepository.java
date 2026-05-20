@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationStatus;
+import roomescape.domain.User;
 import roomescape.repository.ReservationRepository;
 
 public class FakeReservationRepository implements ReservationRepository {
@@ -19,7 +20,7 @@ public class FakeReservationRepository implements ReservationRepository {
 
     @Override
     public Reservation save(Reservation reservation) {
-        Reservation saved = Reservation.restore(counter.getAndIncrement(), reservation.getName(), reservation.getDate(),
+        Reservation saved = Reservation.restore(counter.getAndIncrement(), reservation.getUser(), reservation.getDate(),
                 reservation.getTheme(), reservation.getTime(), reservation.getStatus());
         reservations.add(saved);
         return saved;
@@ -74,7 +75,7 @@ public class FakeReservationRepository implements ReservationRepository {
     }
 
     @Override
-    public List<Reservation> findAllByUserName(String name) {
-        return reservations.stream().filter(reservation -> reservation.getName().equals(name)).toList();
+    public List<Reservation> findAllByUser(User user) {
+        return reservations.stream().filter(reservation -> reservation.getUser().equals(user)).toList();
     }
 }
