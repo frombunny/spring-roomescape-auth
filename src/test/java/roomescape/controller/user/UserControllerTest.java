@@ -1,6 +1,7 @@
 package roomescape.controller.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -15,6 +16,7 @@ import org.springframework.web.context.WebApplicationContext;
 import roomescape.controller.BaseControllerUnitTest;
 import roomescape.domain.Role;
 import roomescape.service.UserService;
+import roomescape.web.controller.user.UserController;
 import roomescape.web.dto.user.UserRequest;
 import roomescape.web.dto.user.UserResponse;
 
@@ -38,11 +40,12 @@ class UserControllerTest extends BaseControllerUnitTest {
         when(userService.register(any(UserRequest.class))).thenReturn(expected);
 
         // when
-        UserResponse response = RestAssuredMockMvc.given().spec(adminSpec().log().all())
-                .body(request)
+        UserResponse response = RestAssuredMockMvc.given().spec(defaultSpec())
+                .log().all().body(request)
                 .when().post("/api/users")
                 .then().log().all()
                 .status(HttpStatus.CREATED)
+                .header("Location", containsString("/api/users/1"))
                 .extract().as(new TypeRef<>() {
                 });
 
