@@ -9,7 +9,7 @@ public class UserDataSource {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public void clearTable(){
+    public void clearTable() {
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
         jdbcTemplate.execute("TRUNCATE TABLE USERS");
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
@@ -18,9 +18,4 @@ public class UserDataSource {
     public void clearId() {
         jdbcTemplate.execute("ALTER TABLE users ALTER COLUMN id RESTART WITH 1");
     }
-
-    public void insertUser(){
-
-    }
-
 }
