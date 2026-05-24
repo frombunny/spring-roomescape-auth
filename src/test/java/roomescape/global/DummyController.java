@@ -69,6 +69,10 @@ public class DummyController {
     public void accessCheck() {
     }
 
+    @GetMapping("/api/user")
+    public void loginCheck(){
+    }
+
     private static class BusinessException extends CustomException {
 
         public BusinessException() {
