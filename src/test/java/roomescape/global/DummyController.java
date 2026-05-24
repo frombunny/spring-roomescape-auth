@@ -69,7 +69,7 @@ public class DummyController {
     public void accessCheck() {
     }
 
-    @GetMapping("/api/user")
+    @GetMapping("/api/users/auth")
     public void loginCheck(){
     }
 

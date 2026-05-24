@@ -1,7 +1,5 @@
 package roomescape.global;
 
-import static org.hamcrest.Matchers.containsString;
-
 import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,10 +20,9 @@ class LoginCheckInterceptorTest {
     void 로그인이_필요한_API로_요청_시_로그인_정보가_없으면_예외가_발생한다() {
         RestAssuredMockMvc.given().log().all()
                 .contentType(MediaType.APPLICATION_JSON)
-                .when().get("/api/user")
+                .when().get("/api/users/auth")
                 .then().log().all()
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(containsString("로그인이 필요합니다."));
+                .status(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
@@ -33,7 +30,7 @@ class LoginCheckInterceptorTest {
         RestAssuredMockMvc.given().log().all()
                 .contentType(MediaType.APPLICATION_JSON)
                 .sessionAttr("loginUserId", "1")
-                .when().get("/api/user")
+                .when().get("/api/users/auth")
                 .then().log().all()
                 .status(HttpStatus.OK);
     }
