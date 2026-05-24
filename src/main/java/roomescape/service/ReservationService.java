@@ -10,13 +10,13 @@ import org.springframework.transaction.annotation.Transactional;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationTime;
 import roomescape.domain.Theme;
+import roomescape.domain.User;
 import roomescape.global.exception.AlreadyCanceledReservationException;
 import roomescape.global.exception.DuplicateEntityException;
 import roomescape.global.exception.EntityNotFoundException;
 import roomescape.repository.ReservationRepository;
 import roomescape.repository.ReservationTimeRepository;
 import roomescape.repository.ThemeRepository;
-import roomescape.web.dto.reservation.ReservationCancelRequest;
 import roomescape.web.dto.reservation.ReservationModifyRequest;
 import roomescape.web.dto.reservation.ReservationRequest;
 import roomescape.web.dto.reservation.ReservationResponse;
@@ -32,7 +32,7 @@ public class ReservationService {
     private final ThemeRepository themeRepository;
 
     @Transactional
-    public ReservationResponse reserve(ReservationRequest request) {
+    public ReservationResponse reserve(User user, ReservationRequest request) {
         Theme theme = findThemeOrThrow(request.themeId());
         ReservationTime time = findTimeOrThrow(request.timeId());
 
@@ -41,15 +41,15 @@ public class ReservationService {
 
         validateDuplicateReservation(request.date(), time, theme);
 
-        Reservation reservation = Reservation.create(request.name(), request.date(), theme, time);
+        Reservation reservation = Reservation.create(user, request.date(), theme, time);
         return ReservationResponse.from(reservationRepository.save(reservation));
     }
 
     @Transactional
-    public void cancel(Long id, ReservationCancelRequest request) {
+    public void cancel(Long id, User user) {
         Reservation reservation = findReservationOrThrow(id);
 
-        reservation.validateOwner(request.name());
+        reservation.validateOwner(user);
         Reservation canceledReservation = reservation.cancel();
         reservationRepository.update(canceledReservation);
     }
@@ -58,12 +58,12 @@ public class ReservationService {
         return reservationRepository.findAllByPaging(page, size).stream().map(ReservationResponse::from).toList();
     }
 
-    public List<ReservationResponse> getReservationsByUser(String name) {
-        return reservationRepository.findAllByUserName(name).stream().map(ReservationResponse::from).toList();
+    public List<ReservationResponse> getReservationsByUser(User user) {
+        return reservationRepository.findAllByUserId(user.getId()).stream().map(ReservationResponse::from).toList();
     }
 
     @Transactional
-    public void modify(Long id, ReservationModifyRequest request) {
+    public void modify(Long id, User user, ReservationModifyRequest request) {
         Reservation reservation = findReservationOrThrow(id);
         if (reservation.isCancel()) {
             throw new AlreadyCanceledReservationException("취소된 예약은 수정할 수 없습니다.");
@@ -76,7 +76,7 @@ public class ReservationService {
         theme.validateInactive();
         time.validateInactive();
 
-        reservation.validateOwner(request.name());
+        reservation.validateOwner(user);
         validateDuplicateReservation(date, time, theme);
 
         reservationRepository.update(reservation.update(date, time));

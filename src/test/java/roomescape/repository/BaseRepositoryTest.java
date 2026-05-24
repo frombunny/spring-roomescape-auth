@@ -1,15 +1,16 @@
-package roomescape.service;
+package roomescape.repository;
 
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ActiveProfiles;
 import roomescape.RoomescapeApplication;
 
 @SpringBootTest(classes = {
         RoomescapeApplication.class,
-        BaseIntegrationTest.class,
-})
+        BaseRepositoryTest.class,
+}, webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@ComponentScan(basePackages = "service")
-public class BaseIntegrationTest {
+@ComponentScan(basePackages = "roomescape.repository")
+public class BaseRepositoryTest {
 }

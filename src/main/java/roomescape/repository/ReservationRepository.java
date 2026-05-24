@@ -22,5 +22,5 @@ public interface ReservationRepository {
 
     boolean existsReservedReservationByTimeId(Long timeId);
 
-    List<Reservation> findAllByUserName(String name);
+    List<Reservation> findAllByUserId(Long userId);
 }

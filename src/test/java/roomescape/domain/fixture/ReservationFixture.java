@@ -18,17 +18,27 @@ public final class ReservationFixture {
         return Stream.of(
                 Arguments.of(
                         null,
+                        LocalDate.now().plusDays(1),
+                        ThemeFixture.createDefaultTheme(),
+                        ReservationTimeFixture.createDefaultReservationTime(),
+                        "사용자 정보는 비어있을 수 없습니다."
+                ),
+                Arguments.of(
+                        UserFixture.createDefaultUser(),
+                        null,
                         ThemeFixture.createDefaultTheme(),
                         ReservationTimeFixture.createDefaultReservationTime(),
                         "예약 날짜 및 시간 정보는 비어있을 수 없습니다."
-                ),
+                        ),
                 Arguments.of(
+                        UserFixture.createDefaultUser(),
                         LocalDate.now().plusDays(1),
                         null,
                         ReservationTimeFixture.createDefaultReservationTime(),
                         "테마 정보는 비어있을 수 없습니다."
                 ),
                 Arguments.of(
+                        UserFixture.createDefaultUser(),
                         LocalDate.now().plusDays(1),
                         ThemeFixture.createDefaultTheme(),
                         null,

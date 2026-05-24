@@ -29,10 +29,10 @@ public class JdbcReservationRepository implements ReservationRepository {
     @Override
     public Reservation save(Reservation reservation) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        String sql = "INSERT INTO reservation (name, date, theme_id, time_id, status) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO reservation (user_id, date, theme_id, time_id, status) VALUES (?, ?, ?, ?, ?)";
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
-            ps.setString(1, reservation.getName());
+            ps.setLong(1, reservation.getUser().getId());
             ps.setDate(2, Date.valueOf(reservation.getDate()));
             ps.setLong(3, reservation.getTheme().getId());
             ps.setLong(4, reservation.getTime().getId());
@@ -41,7 +41,7 @@ public class JdbcReservationRepository implements ReservationRepository {
         }, keyHolder);
 
         Long id = Objects.requireNonNull(keyHolder.getKey()).longValue();
-        return Reservation.restore(id, reservation.getName(), reservation.getDate(), reservation.getTheme(),
+        return Reservation.restore(id, reservation.getUser(), reservation.getDate(), reservation.getTheme(),
                 reservation.getTime(), reservation.getStatus());
     }
 
@@ -49,11 +49,11 @@ public class JdbcReservationRepository implements ReservationRepository {
     public void update(Reservation reservation) {
         String sql = """
                     UPDATE reservation
-                    SET name = ?, date = ?, theme_id = ?, time_id = ?, status = ?
+                    SET user_id = ?, date = ?, theme_id = ?, time_id = ?, status = ?
                     WHERE id=?
                 """;
 
-        int affectedRow = jdbcTemplate.update(sql, reservation.getName(), reservation.getDate(),
+        int affectedRow = jdbcTemplate.update(sql, reservation.getUser().getId(), reservation.getDate(),
                 reservation.getTheme().getId(), reservation.getTime().getId(), reservation.getStatus().toString(),
                 reservation.getId());
 
@@ -66,12 +66,14 @@ public class JdbcReservationRepository implements ReservationRepository {
     public Optional<Reservation> findById(Long id) {
         try {
             String sql = """
-                    SELECT r.id AS res_id, r.name AS res_name, r.date AS res_date, r.status AS res_status,
+                    SELECT r.id AS res_id, r.date AS res_date, r.status AS res_status,
+                           u.id AS user_id, u.login_id, u.name AS user_name, u.password, u.role,
                            rt.id AS time_id, rt.start_at AS time_start, rt.is_active AS time_active,
                            t.id AS theme_id, t.name AS theme_name, t.description, t.thumbnail_image_url, t.is_active AS theme_active
                     FROM reservation r
                     JOIN reservation_time rt ON r.time_id = rt.id
                     JOIN theme t ON r.theme_id = t.id
+                    JOIN users u ON r.user_id = u.id
                     WHERE r.id = ?
                     """;
 
@@ -93,13 +95,15 @@ public class JdbcReservationRepository implements ReservationRepository {
     public List<Reservation> findAllByPaging(int page, int size) {
         int offset = page * size;
         String sql = """
-                    SELECT r.id AS res_id, r.name AS res_name, r.date AS res_date, r.status AS res_status,
+                    SELECT r.id AS res_id, r.date AS res_date, r.status AS res_status,
+                           u.id AS user_id, u.login_id AS login_id, u.name AS user_name, u.password AS password, u.role AS role,                           
                            rt.id AS time_id, rt.start_at AS time_start, rt.is_active AS time_active,
                            t.id AS theme_id, t.name AS theme_name, t.description, t.thumbnail_image_url, t.is_active AS theme_active
                     FROM reservation r
+                    JOIN users u ON r.user_id = u.id
                     JOIN reservation_time rt ON r.time_id = rt.id
                     JOIN theme t ON r.theme_id = t.id
-                    ORDER BY r.id DESC
+                    ORDER BY r.date DESC, rt.start_at ASC
                     LIMIT ? OFFSET ?
                 """;
         return jdbcTemplate.query(sql, RESERVATION_ROW_MAPPER, size, offset);
@@ -124,18 +128,20 @@ public class JdbcReservationRepository implements ReservationRepository {
     }
 
     @Override
-    public List<Reservation> findAllByUserName(String name) {
+    public List<Reservation> findAllByUserId(Long userId) {
         String sql = """
-                    SELECT r.id AS res_id, r.name AS res_name, r.date AS res_date, r.status AS res_status,
+                    SELECT r.id AS res_id, r.date AS res_date, r.status AS res_status,
+                           u.id AS user_id, u.login_id AS login_id, u.name AS user_name, u.password AS password, u.role AS role,                           
                            rt.id AS time_id, rt.start_at AS time_start, rt.is_active AS time_active,
                            t.id AS theme_id, t.name AS theme_name, t.description, t.thumbnail_image_url, t.is_active AS theme_active
                     FROM reservation r
+                    JOIN users u ON r.user_id = u.id
                     JOIN reservation_time rt ON r.time_id = rt.id
                     JOIN theme t ON r.theme_id = t.id
-                    WHERE r.name = ?
+                    WHERE r.user_id = ?
                     ORDER BY r.id DESC
                 """;
 
-        return jdbcTemplate.query(sql, RESERVATION_ROW_MAPPER, name);
+        return jdbcTemplate.query(sql, RESERVATION_ROW_MAPPER, userId);
     }
 }

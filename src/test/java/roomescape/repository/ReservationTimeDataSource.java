@@ -1,6 +1,5 @@
 package roomescape.repository;
 
-import java.time.LocalDate;
 import java.time.LocalTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -15,6 +14,7 @@ public class ReservationTimeDataSource {
     public void clearTable() {
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
         jdbcTemplate.execute("TRUNCATE TABLE reservation");
+        jdbcTemplate.execute("TRUNCATE TABLE users");
         jdbcTemplate.execute("TRUNCATE TABLE reservation_time");
         jdbcTemplate.execute("TRUNCATE TABLE theme");
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
@@ -24,6 +24,7 @@ public class ReservationTimeDataSource {
         jdbcTemplate.execute("ALTER TABLE reservation_time ALTER COLUMN id RESTART WITH 1");
         jdbcTemplate.execute("ALTER TABLE theme ALTER COLUMN id RESTART WITH 1");
         jdbcTemplate.execute("ALTER TABLE reservation ALTER COLUMN id RESTART WITH 1");
+        jdbcTemplate.execute("ALTER TABLE users ALTER COLUMN id RESTART WITH 1");
     }
 
     public void insertOneTheme() {
@@ -36,12 +37,5 @@ public class ReservationTimeDataSource {
         for (int i = startHour; i <= endHour; i++) {
             jdbcTemplate.update(sql, LocalTime.of(i, 0));
         }
-    }
-
-    public void insertReservation(long themeId, LocalDate date, long timeId) {
-        jdbcTemplate.update(
-                "INSERT INTO reservation (name, date, theme_id, time_id) VALUES (?, ?, ?, ?)",
-                "이프", date, themeId, timeId
-        );
     }
 }

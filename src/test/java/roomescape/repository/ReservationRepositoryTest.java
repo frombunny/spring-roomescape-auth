@@ -23,13 +23,12 @@ import roomescape.domain.fixture.ReservationTimeFixture;
 import roomescape.domain.fixture.ThemeFixture;
 import roomescape.domain.fixture.UserFixture;
 import roomescape.global.exception.EntityNotFoundException;
-import roomescape.service.BaseIntegrationTest;
 
-class ReservationRepositoryTest extends BaseIntegrationTest {
+class ReservationRepositoryTest extends BaseRepositoryTest {
 
     private final ReservationTime reservationTime = ReservationTimeFixture.createDefaultReservationTime();
     private final Theme theme = ThemeFixture.createThemeWithId();
-    private final User user = UserFixture.createDefaultUser();
+    private final User user = UserFixture.createDefaultUserWithId();
 
     @Autowired
     private ReservationRepository reservationRepository;
@@ -63,7 +62,7 @@ class ReservationRepositoryTest extends BaseIntegrationTest {
     void 동일한_날짜와_시간으로_저장하면_DB_제약조건_에러가_발생한다() {
         // given
         LocalDate date = LocalDate.now().plusDays(1);
-        User anotherUser = UserFixture.createAnotherUser();
+        User anotherUser = UserFixture.createAnotherUserWithId();
         dataSource.insertUser(anotherUser.getName(), user.getLoginId(), user.getPassword(), user.getRole());
 
         Reservation first = Reservation.create(user, date, theme, reservationTime);
@@ -141,15 +140,16 @@ class ReservationRepositoryTest extends BaseIntegrationTest {
     @Test
     void 예약_목록을_최신_등록순으로_페이징_조회한다() {
         // given
-        dataSource.insertReservedReservation(user.getId(), LocalDate.now().minusDays(2), 1L, 1L);
-        dataSource.insertReservedReservation(user.getId(), LocalDate.now().minusDays(1), 1L, 1L);
-        dataSource.insertReservedReservation(user.getId(), LocalDate.now(), 1L, 1L);
+        LocalDate today = LocalDate.now();
+        dataSource.insertReservedReservation(user.getId(), today.minusDays(2), 1L, 1L);
+        dataSource.insertReservedReservation(user.getId(), today.minusDays(1), 1L, 1L);
+        dataSource.insertReservedReservation(user.getId(), today, 1L, 1L);
 
         // when
-        List<Reservation> reservations = reservationRepository.findAllByPaging(1, 1);
+        List<Reservation> reservations = reservationRepository.findAllByPaging(0, 1);
 
         // then
-        assertThat(reservations).hasSize(1).extracting(Reservation::getName).containsExactly("두번째");
+        assertThat(reservations).hasSize(1).extracting(Reservation::getDate).containsExactly(today);
     }
 
     @Test
@@ -164,7 +164,7 @@ class ReservationRepositoryTest extends BaseIntegrationTest {
                 reservationTime);
         reservationRepository.save(reservation);
 
-        User anotherUser = User.create("이안", "eian", "1234", Role.ROLE_USER);
+        User anotherUser = User.restore(2L, "이안", "eian", "1234", Role.ROLE_USER);
         dataSource.insertUser(anotherUser.getName(), anotherUser.getLoginId(), anotherUser.getPassword(),
                 anotherUser.getRole());
         Reservation secondReservation = reservationRepository.save(

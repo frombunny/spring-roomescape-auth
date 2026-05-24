@@ -74,7 +74,7 @@ class ReservationControllerTest extends BaseControllerUnitTest {
 
         ReservationResponse expected = new ReservationResponse(1L, "이프", LocalDate.now(), timeResponse, themeResponse,
                 ReservationStatus.RESERVED);
-        when(reservationService.reserve(any(ReservationRequest.class))).thenReturn(expected);
+        when(reservationService.reserve(any(User.class), any(ReservationRequest.class))).thenReturn(expected);
 
         // when & then
         ReservationResponse response = RestAssuredMockMvc.given().spec(defaultSpec())
@@ -95,7 +95,7 @@ class ReservationControllerTest extends BaseControllerUnitTest {
         User user = UserFixture.createDefaultUser();
         Reservation reservation = ReservationFixture.createDefaultReservationWithUser(user);
         ReservationResponses expected = new ReservationResponses(List.of(ReservationResponse.from(reservation)));
-        when(reservationService.getReservationsByUser(any(String.class))).thenReturn(expected.responses());
+        when(reservationService.getReservationsByUser(any(User.class))).thenReturn(expected.responses());
 
         // when & then
         ReservationResponses response = RestAssuredMockMvc.given().spec(defaultSpec())
@@ -165,7 +165,7 @@ class ReservationControllerTest extends BaseControllerUnitTest {
         RestAssuredMockMvc.given().spec(adminSpec()).log().all().body(request).when()
                 .patch("/api/reservations/1/cancel").then().log().all().status(HttpStatus.NO_CONTENT);
 
-        verify(reservationService, times(1)).cancel(anyLong(), any(ReservationCancelRequest.class));
+        verify(reservationService, times(1)).cancel(anyLong(), any(User.class));
     }
 
 
@@ -182,17 +182,6 @@ class ReservationControllerTest extends BaseControllerUnitTest {
     }
 
     @Test
-    void 예약_취소_요청_시_예약자_명이_빈_값이면_예외가_발생한다() {
-        // given
-        ReservationCancelRequest request = new ReservationCancelRequest(" ");
-
-        // when & then
-        RestAssuredMockMvc.given().spec(adminSpec()).log().all().body(request).when()
-                .patch("/api/reservations/1/cancel").then().log().all().status(HttpStatus.BAD_REQUEST)
-                .body(containsString("예약자 이름 정보는 필수 값입니다."));
-    }
-
-    @Test
     void 정상적인_예약_ID로_예약_수정_요청_시_204_NO_CONTENT를_응답한다() {
         // given
         ReservationModifyRequest request = ReservationRequestFixture.modifySuccessRequestFixture();
@@ -201,7 +190,7 @@ class ReservationControllerTest extends BaseControllerUnitTest {
         RestAssuredMockMvc.given().spec(adminSpec()).log().all().body(request).when()
                 .patch("/api/reservations/1/modify").then().log().all().status(HttpStatus.NO_CONTENT);
 
-        verify(reservationService, times(1)).modify(anyLong(), any(ReservationModifyRequest.class));
+        verify(reservationService, times(1)).modify(anyLong(), any(User.class), any(ReservationModifyRequest.class));
     }
 
     @ParameterizedTest

@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationStatus;
-import roomescape.domain.User;
 import roomescape.repository.ReservationRepository;
 
 public class FakeReservationRepository implements ReservationRepository {
@@ -75,7 +74,8 @@ public class FakeReservationRepository implements ReservationRepository {
     }
 
     @Override
-    public List<Reservation> findAllByUser(User user) {
-        return reservations.stream().filter(reservation -> reservation.getUser().equals(user)).toList();
+    public List<Reservation> findAllByUserId(Long userId) {
+        return reservations.stream()
+                .filter(reservation -> reservation.getUser().getId().equals(userId)).toList();
     }
 }

@@ -4,7 +4,9 @@ import org.springframework.jdbc.core.RowMapper;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationStatus;
 import roomescape.domain.ReservationTime;
+import roomescape.domain.Role;
 import roomescape.domain.Theme;
+import roomescape.domain.User;
 
 public final class ReservationEntityMapper {
 
@@ -21,9 +23,16 @@ public final class ReservationEntityMapper {
                 rs.getString("thumbnail_image_url"),
                 rs.getBoolean("theme_active")
         );
+        User user = User.restore(
+                rs.getLong("user_id"),
+                rs.getString("user_name"),
+                rs.getString("login_id"),
+                rs.getString("password"),
+                Role.valueOf(rs.getString("role"))
+        );
         return Reservation.restore(
                 rs.getLong("res_id"),
-                rs.getString("res_name"),
+                user,
                 rs.getDate("res_date").toLocalDate(),
                 theme,
                 time,

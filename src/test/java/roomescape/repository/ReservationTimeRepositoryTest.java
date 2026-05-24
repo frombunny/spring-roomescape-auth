@@ -13,9 +13,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import roomescape.domain.ReservationTime;
 import roomescape.domain.fixture.ReservationTimeFixture;
 import roomescape.global.exception.EntityNotFoundException;
-import roomescape.service.BaseIntegrationTest;
 
-class ReservationTimeRepositoryTest extends BaseIntegrationTest {
+class ReservationTimeRepositoryTest extends BaseRepositoryTest {
 
     @Autowired
     private ReservationTimeRepository reservationTimeRepository;

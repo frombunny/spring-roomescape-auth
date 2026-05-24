@@ -15,8 +15,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import roomescape.domain.Role;
+import roomescape.domain.User;
 import roomescape.service.ReservationService;
-import roomescape.web.dto.reservation.ReservationCancelRequest;
 import roomescape.web.dto.reservation.ReservationModifyRequest;
 import roomescape.web.dto.reservation.ReservationRequest;
 import roomescape.web.dto.reservation.ReservationResponse;
@@ -33,7 +34,8 @@ public class ReservationController {
 
     @PostMapping
     public ResponseEntity<ReservationResponse> reserve(@Valid @RequestBody ReservationRequest request) {
-        ReservationResponse response = reservationService.reserve(request);
+        User user = User.restore(1L, "바니", "bunny", "1234", Role.ROLE_USER);
+        ReservationResponse response = reservationService.reserve(user, request);
 
         URI location = URI.create("/api/reservations/" + response.id());
 
@@ -41,8 +43,9 @@ public class ReservationController {
     }
 
     @GetMapping
-    public ResponseEntity<ReservationResponses> getReservationsByUser(@RequestParam String name) {
-        ReservationResponses response = new ReservationResponses(reservationService.getReservationsByUser(name));
+    public ResponseEntity<ReservationResponses> getReservationsByUser() {
+        User user = User.restore(1L, "바니", "bunny", "1234", Role.ROLE_USER);
+        ReservationResponses response = new ReservationResponses(reservationService.getReservationsByUser(user));
 
         return ResponseEntity.ok(response);
     }
@@ -62,10 +65,10 @@ public class ReservationController {
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<Void> cancel(
             @PathVariable
-            @Positive(message = "예약 식별자는 양수여야 합니다.") Long id,
-            @Valid @RequestBody ReservationCancelRequest request
+            @Positive(message = "예약 식별자는 양수여야 합니다.") Long id
     ) {
-        reservationService.cancel(id, request);
+        User user = User.restore(1L, "바니", "bunny", "1234", Role.ROLE_USER);
+        reservationService.cancel(id, user);
 
         return ResponseEntity.noContent().build();
     }
@@ -76,7 +79,8 @@ public class ReservationController {
             @Positive(message = "예약 식별자는 양수여야 합니다.") Long id,
             @Valid @RequestBody ReservationModifyRequest request
     ) {
-        reservationService.modify(id, request);
+        User user = User.restore(1L, "바니", "bunny", "1234", Role.ROLE_USER);
+        reservationService.modify(id, user, request);
         return ResponseEntity.noContent().build();
     }
 }

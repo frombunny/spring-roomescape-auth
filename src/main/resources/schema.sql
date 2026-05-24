@@ -33,14 +33,15 @@ CREATE TABLE reservation_time
 CREATE TABLE reservation
 (
     id             BIGINT      NOT NULL AUTO_INCREMENT,
-    name           VARCHAR(20) NOT NULL,
+    user_id        BIGINT      NOT NULL,
     date           DATE        NOT NULL,
-    theme_id       BIGINT,
-    time_id        BIGINT,
+    theme_id       BIGINT      NOT NULL,
+    time_id        BIGINT      NOT NULL,
     status         VARCHAR(20) NOT NULL,
     active_time_id BIGINT AS (CASE WHEN status = 'RESERVED' THEN time_id ELSE NULL END),
     PRIMARY KEY (id),
     FOREIGN KEY (theme_id) REFERENCES theme (id),
+    FOREIGN KEY (user_id) REFERENCES users (id),
     FOREIGN KEY (time_id) REFERENCES reservation_time (id),
     CONSTRAINT uk_reservation_date_theme_active_time UNIQUE (date, theme_id, active_time_id)
 );

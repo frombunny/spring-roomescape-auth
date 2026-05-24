@@ -7,9 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import roomescape.domain.User;
 import roomescape.domain.fixture.UserFixture;
-import roomescape.service.BaseIntegrationTest;
 
-class UserRepositoryTest extends BaseIntegrationTest {
+class UserRepositoryTest extends BaseRepositoryTest {
     @Autowired
     private UserRepository userRepository;
 

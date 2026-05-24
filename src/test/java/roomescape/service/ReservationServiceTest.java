@@ -16,7 +16,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationStatus;
 import roomescape.domain.ReservationTime;
-import roomescape.domain.Role;
 import roomescape.domain.Theme;
 import roomescape.domain.User;
 import roomescape.domain.fixture.ReservationFixture;
@@ -36,14 +35,12 @@ import roomescape.repository.fake.FakeReservationRepository;
 import roomescape.repository.fake.FakeReservationTimeRepository;
 import roomescape.repository.fake.FakeThemeRepository;
 import roomescape.repository.fake.FakeUserRepository;
-import roomescape.web.dto.reservation.ReservationCancelRequest;
 import roomescape.web.dto.reservation.ReservationModifyRequest;
 import roomescape.web.dto.reservation.ReservationRequest;
 import roomescape.web.dto.reservation.ReservationResponse;
 import roomescape.web.dto.reservationTime.ReservationTimeResponse;
 import roomescape.web.dto.theme.ReservationTimeStatusResponse;
 import roomescape.web.dto.theme.ThemeResponse;
-import roomescape.web.dto.user.UserResponse;
 
 class ReservationServiceTest {
 
@@ -76,27 +73,27 @@ class ReservationServiceTest {
         Theme theme = themeRepository.save(ThemeFixture.createDefaultTheme());
         User user = userRepository.save(UserFixture.createDefaultUser());
         LocalDate reservationDate = LocalDate.now().plusDays(1);
-        ReservationRequest request = new ReservationRequest(user.getId(), reservationDate, theme.getId(), time.getId());
+        ReservationRequest request = new ReservationRequest(reservationDate, theme.getId(), time.getId());
 
         // when
-        ReservationResponse response = reservationService.reserve(request);
+        ReservationResponse response = reservationService.reserve(user, request);
 
         // then
         ReservationTimeResponse timeResponse = ReservationTimeResponse.from(time);
         ThemeResponse themeResponse = ThemeResponse.from(theme);
-        assertThat(response).extracting(ReservationResponse::id, ReservationResponse::user, ReservationResponse::date,
+        assertThat(response).extracting(ReservationResponse::id, ReservationResponse::name, ReservationResponse::date,
                         ReservationResponse::time, ReservationResponse::theme, ReservationResponse::status)
-                .containsExactly(1L, user, reservationDate, timeResponse, themeResponse, ReservationStatus.RESERVED);
+                .containsExactly(1L, user.getName(), reservationDate, timeResponse, themeResponse, ReservationStatus.RESERVED);
     }
 
     @Test
     void 존재하지_않는_테마_정보로_예약하면_예외가_발생한다() {
         // given
         User user = userRepository.save(UserFixture.createDefaultUser());
-        ReservationRequest request = new ReservationRequest(user.getId(),LocalDate.now().plusDays(1), 1L, 1L);
+        ReservationRequest request = new ReservationRequest(LocalDate.now().plusDays(1), 1L, 1L);
 
         // when & then
-        assertThatThrownBy(() -> reservationService.reserve(request)).isInstanceOf(EntityNotFoundException.class)
+        assertThatThrownBy(() -> reservationService.reserve(user, request)).isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("존재하지 않는 테마 정보입니다.");
     }
 
@@ -104,11 +101,11 @@ class ReservationServiceTest {
     void 존재하지_않는_시간_정보로_예약하면_예외가_발생한다() {
         // given
         User user = userRepository.save(UserFixture.createDefaultUser());
-        ReservationRequest request = new ReservationRequest(user.getId(), LocalDate.now().plusDays(1), 1L, 1L);
+        ReservationRequest request = new ReservationRequest(LocalDate.now().plusDays(1), 1L, 1L);
         themeRepository.save(ThemeFixture.createDefaultTheme());
 
         // when & then
-        assertThatThrownBy(() -> reservationService.reserve(request)).isInstanceOf(EntityNotFoundException.class)
+        assertThatThrownBy(() -> reservationService.reserve(user, request)).isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("존재하지 않는 시간 정보입니다.");
     }
 
@@ -124,10 +121,10 @@ class ReservationServiceTest {
 
         LocalDate date = existingReservation.getDate();
 
-        ReservationRequest request = new ReservationRequest("새예약자", date, theme.getId(), time.getId());
+        ReservationRequest request = new ReservationRequest(date, theme.getId(), time.getId());
 
         // when & then
-        assertThatThrownBy(() -> reservationService.reserve(request)).isInstanceOf(DuplicateEntityException.class)
+        assertThatThrownBy(() -> reservationService.reserve(user, request)).isInstanceOf(DuplicateEntityException.class)
                 .hasMessageContaining("이미 예약 된 날짜입니다.");
     }
 
@@ -137,11 +134,11 @@ class ReservationServiceTest {
         Theme inactiveTheme = themeRepository.save(ThemeFixture.createDefaultTheme().deactivate());
         ReservationTime time = reservationTimeRepository.save(ReservationTimeFixture.createDefaultReservationTime());
         User user = userRepository.save(UserFixture.createDefaultUser());
-        ReservationRequest request = new ReservationRequest(user.getId(), LocalDate.now().plusDays(1), inactiveTheme.getId(),
+        ReservationRequest request = new ReservationRequest(LocalDate.now().plusDays(1), inactiveTheme.getId(),
                 time.getId());
 
         // when & then
-        assertThatThrownBy(() -> reservationService.reserve(request)).isInstanceOf(InactiveException.class)
+        assertThatThrownBy(() -> reservationService.reserve(user, request)).isInstanceOf(InactiveException.class)
                 .hasMessage("비활성화 된 테마는 예약할 수 없습니다.");
     }
 
@@ -153,11 +150,11 @@ class ReservationServiceTest {
         ReservationTime savedTime = reservationTimeRepository.save(inactiveTime);
         User user = userRepository.save(UserFixture.createDefaultUser());
 
-        ReservationRequest request = new ReservationRequest(user.getId(), LocalDate.now().plusDays(1), theme.getId(),
+        ReservationRequest request = new ReservationRequest(LocalDate.now().plusDays(1), theme.getId(),
                 savedTime.getId());
 
         // when & then
-        assertThatThrownBy(() -> reservationService.reserve(request)).isInstanceOf(InactiveException.class)
+        assertThatThrownBy(() -> reservationService.reserve(user, request)).isInstanceOf(InactiveException.class)
                 .hasMessage("비활성화 된 시간대는 예약할 수 없습니다.");
     }
 
@@ -198,20 +195,19 @@ class ReservationServiceTest {
         Reservation reservation = reservationRepository.save(ReservationFixture.createDefaultReservationWithUser(user));
 
         // when & then
-        assertThatCode(() -> reservationService.cancel(reservation.getId(),
-                new ReservationCancelRequest(user.getId()))).doesNotThrowAnyException();
+        assertThatCode(() -> reservationService.cancel(reservation.getId(), user)).doesNotThrowAnyException();
     }
 
     @Test
     void 사용자_정보와_예약자_정보가_일치하지_않는_예약을_취소하면_예외가_발생한다() {
+        // TODO 사용자 정보와 예약자 정보 일치 여부 판정 로직 추가 필요
         // given
         User user = userRepository.save(UserFixture.createDefaultUser());
-        User anotherUser = userRepository.save(UserFixture.createAnotherUser());
         Reservation reservation = reservationRepository.save(ReservationFixture.createDefaultReservationWithUser(user));
 
         // when & then
         assertThatThrownBy(
-                () -> reservationService.cancel(reservation.getId(), new ReservationCancelRequest(anotherUser.getId()))).isInstanceOf(
+                () -> reservationService.cancel(reservation.getId(), user)).isInstanceOf(
                 ForbiddenException.class);
     }
 
@@ -228,10 +224,10 @@ class ReservationServiceTest {
         reservationRepository.save(canceled);
 
         // when
-        ReservationRequest request = new ReservationRequest(anotherUser.getId(), date, theme.getId(), time.getId());
+        ReservationRequest request = new ReservationRequest(date, theme.getId(), time.getId());
 
         // then
-        assertThatCode(() -> reservationService.reserve(request)).doesNotThrowAnyException();
+        assertThatCode(() -> reservationService.reserve(anotherUser, request)).doesNotThrowAnyException();
     }
 
     @ParameterizedTest
@@ -318,10 +314,10 @@ class ReservationServiceTest {
         Reservation reservation = reservationRepository.save(
                 ReservationFixture.createDefaultReservationWithUser(user, theme, originalTime));
         LocalDate modifiedDate = LocalDate.now().plusDays(2);
-        ReservationModifyRequest request = new ReservationModifyRequest(user.getId(), modifiedDate, modifiedTime.getId());
+        ReservationModifyRequest request = new ReservationModifyRequest(modifiedDate, modifiedTime.getId());
 
         // when
-        reservationService.modify(reservation.getId(), request);
+        reservationService.modify(reservation.getId(), user, request);
 
         // then
         Reservation modifiedReservation = reservationRepository.findById(reservation.getId()).get();
@@ -333,6 +329,7 @@ class ReservationServiceTest {
 
     @Test
     void 사용자_정보와_예약자_정보가_일치하지_않으면_예약_수정_시_예외가_발생한다() {
+        // TODO 사용자 정보와 예약자 정보 일치 여부 판정 로직 추가 필요
         // given
         Theme theme = themeRepository.save(ThemeFixture.createDefaultTheme());
         ReservationTime originalTime = reservationTimeRepository.save(ReservationTime.create(LocalTime.of(10, 0)));
@@ -341,11 +338,11 @@ class ReservationServiceTest {
         User anotherUser = userRepository.save(UserFixture.createAnotherUser());
         Reservation reservation = reservationRepository.save(
                 ReservationFixture.createDefaultReservationWithUser(user, theme, originalTime));
-        ReservationModifyRequest request = new ReservationModifyRequest(anotherUser.getId(), LocalDate.now().plusDays(2),
+        ReservationModifyRequest request = new ReservationModifyRequest(LocalDate.now().plusDays(2),
                 modifiedTime.getId());
 
         // when & then
-        assertThatThrownBy(() -> reservationService.modify(reservation.getId(), request)).isInstanceOf(
+        assertThatThrownBy(() -> reservationService.modify(reservation.getId(), anotherUser, request)).isInstanceOf(
                 ForbiddenException.class).hasMessage("예약자 명이 일치하지 않습니다.");
     }
 
@@ -358,11 +355,11 @@ class ReservationServiceTest {
         User user = userRepository.save(UserFixture.createDefaultUser());
         Reservation canceledReservation = reservationRepository.save(
                 ReservationFixture.createDefaultReservationWithUser(user, theme, originalTime).cancel());
-        ReservationModifyRequest request = new ReservationModifyRequest(user.getId(), LocalDate.now().plusDays(2),
+        ReservationModifyRequest request = new ReservationModifyRequest(LocalDate.now().plusDays(2),
                 modifiedTime.getId());
 
         // when & then
-        assertThatThrownBy(() -> reservationService.modify(canceledReservation.getId(), request)).isInstanceOf(
+        assertThatThrownBy(() -> reservationService.modify(canceledReservation.getId(), user, request)).isInstanceOf(
                 AlreadyCanceledReservationException.class).hasMessage("취소된 예약은 수정할 수 없습니다.");
     }
 
@@ -378,10 +375,10 @@ class ReservationServiceTest {
 
         Theme inactiveTheme = theme.deactivate();
         themeRepository.update(inactiveTheme);
-        ReservationModifyRequest request = new ReservationModifyRequest(user.getId(), LocalDate.now().plusDays(2),
+        ReservationModifyRequest request = new ReservationModifyRequest(LocalDate.now().plusDays(2),
                 modifiedTime.getId());
         // when & then
-        assertThatThrownBy(() -> reservationService.modify(reservation.getId(), request)).isInstanceOf(
+        assertThatThrownBy(() -> reservationService.modify(reservation.getId(), user, request)).isInstanceOf(
                 InactiveException.class).hasMessage("비활성화 된 테마는 예약할 수 없습니다.");
     }
 
@@ -395,11 +392,11 @@ class ReservationServiceTest {
         User user = userRepository.save(UserFixture.createDefaultUser());
         Reservation reservation = reservationRepository.save(
                 ReservationFixture.createDefaultReservationWithUser(user, theme, originalTime));
-        ReservationModifyRequest request = new ReservationModifyRequest(user.getId(), LocalDate.now().plusDays(2),
+        ReservationModifyRequest request = new ReservationModifyRequest(LocalDate.now().plusDays(2),
                 savedInactiveTime.getId());
 
         // when & then
-        assertThatThrownBy(() -> reservationService.modify(reservation.getId(), request)).isInstanceOf(
+        assertThatThrownBy(() -> reservationService.modify(reservation.getId(), user, request)).isInstanceOf(
                 InactiveException.class).hasMessage("비활성화 된 시간대는 예약할 수 없습니다.");
     }
 
@@ -416,10 +413,10 @@ class ReservationServiceTest {
         Reservation reservation = reservationRepository.save(
                 ReservationFixture.createDefaultReservationWithUser(user, theme, originalTime));
         reservationRepository.save(Reservation.create(anotherUser, duplicateDate, theme, duplicateTime));
-        ReservationModifyRequest request = new ReservationModifyRequest(user.getId(), duplicateDate, duplicateTime.getId());
+        ReservationModifyRequest request = new ReservationModifyRequest(duplicateDate, duplicateTime.getId());
 
         // when & then
-        assertThatThrownBy(() -> reservationService.modify(reservation.getId(), request)).isInstanceOf(
+        assertThatThrownBy(() -> reservationService.modify(reservation.getId(), user, request)).isInstanceOf(
                 DuplicateEntityException.class).hasMessageContaining("이미 예약 된 날짜입니다.");
     }
 }

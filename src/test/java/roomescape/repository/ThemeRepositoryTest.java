@@ -13,9 +13,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import roomescape.domain.Theme;
 import roomescape.domain.fixture.ThemeFixture;
 import roomescape.global.exception.EntityNotFoundException;
-import roomescape.service.BaseIntegrationTest;
 
-class ThemeRepositoryTest extends BaseIntegrationTest {
+class ThemeRepositoryTest extends BaseRepositoryTest {
     @Autowired
     private ThemeRepository themeRepository;
 
@@ -119,13 +118,15 @@ class ThemeRepositoryTest extends BaseIntegrationTest {
         // given
         dataSource.insertThemesByCount(15);
         dataSource.insertTimeByStartToEndWithOneHourRotation(10, 18);
+        dataSource.insertUserByCount(1);
 
+        Long userId = 1L;
         Long mostReservedThemeId = 2L;
         Long secondReservedThemeId = 1L;
         Long thirdReservedThemeId = 3L;
-        dataSource.insertReservedReservationByTheme(mostReservedThemeId, 3);
-        dataSource.insertReservedReservationByTheme(secondReservedThemeId, 2);
-        dataSource.insertReservedReservationByTheme(thirdReservedThemeId, 1);
+        dataSource.insertReservedReservationByTheme(userId, mostReservedThemeId, 3);
+        dataSource.insertReservedReservationByTheme(userId, secondReservedThemeId, 2);
+        dataSource.insertReservedReservationByTheme(userId, thirdReservedThemeId, 1);
 
         // when
         LocalDate now = LocalDate.now();
@@ -144,8 +145,9 @@ class ThemeRepositoryTest extends BaseIntegrationTest {
         // given
         dataSource.insertThemesByCount(3);
         dataSource.insertTimeByStartToEndWithOneHourRotation(10, 12);
-        dataSource.insertReservedReservation("바니", LocalDate.now(), 2L, 1L);
-        dataSource.insertReservedReservation("이프", LocalDate.now(), 1L, 2L);
+        dataSource.insertUserByCount(2);
+        dataSource.insertReservedReservation(1L, LocalDate.now(), 2L, 1L);
+        dataSource.insertReservedReservation(2L, LocalDate.now(), 1L, 2L);
 
         // when
         LocalDate now = LocalDate.now();

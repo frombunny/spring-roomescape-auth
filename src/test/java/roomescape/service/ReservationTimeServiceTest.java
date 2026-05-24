@@ -9,9 +9,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import roomescape.domain.ReservationTime;
 import roomescape.domain.Theme;
+import roomescape.domain.User;
 import roomescape.domain.fixture.ReservationFixture;
 import roomescape.domain.fixture.ReservationTimeFixture;
 import roomescape.domain.fixture.ThemeFixture;
+import roomescape.domain.fixture.UserFixture;
 import roomescape.global.exception.DuplicateEntityException;
 import roomescape.global.exception.ForbiddenException;
 import roomescape.repository.ReservationRepository;
@@ -109,7 +111,8 @@ class ReservationTimeServiceTest {
         // given
         ReservationTime time = reservationTimeRepository.save(ReservationTimeFixture.createDefaultReservationTime());
         Theme theme = ThemeFixture.createThemeWithId();
-        reservationRepository.save(ReservationFixture.createDefaultReservationWithUser("바니", theme, time));
+        User user = UserFixture.createDefaultUser();
+        reservationRepository.save(ReservationFixture.createDefaultReservationWithUser(user, theme, time));
 
         // when & then
         assertThatThrownBy(() -> reservationTimeService.deactivate(time.getId())).isInstanceOf(
