@@ -6,14 +6,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.context.WebApplicationContext;
+import roomescape.repository.UserRepository;
 
 @WebMvcTest(DummyController.class)
-class LoginCheckInterceptorTest {
-
+class LoginCheckInterceptorTest extends BaseGlobalTest {
     @BeforeEach
     void setUp(WebApplicationContext webApplicationContext) {
-        RestAssuredMockMvc.webAppContextSetup(webApplicationContext);
+        mockMvcSetting(webApplicationContext);
     }
 
     @Test

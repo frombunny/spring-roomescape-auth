@@ -15,14 +15,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.MethodParameter;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.request.NativeWebRequest;
 import roomescape.domain.User;
 import roomescape.domain.fixture.UserFixture;
+import roomescape.global.auth.LoginArgumentResolver;
+import roomescape.global.auth.LoginUser;
 import roomescape.repository.UserRepository;
 import roomescape.repository.fake.FakeUserRepository;
 
 @ExtendWith(MockitoExtension.class)
-class LoginArgumentResolverTest {
+class LoginArgumentResolverTest extends BaseGlobalTest {
     @InjectMocks
     private LoginArgumentResolver loginArgumentResolver;
 
