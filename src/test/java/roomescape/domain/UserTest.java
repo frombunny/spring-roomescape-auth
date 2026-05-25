@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import roomescape.domain.fixture.UserFixture;
 import roomescape.global.exception.ValidationException;
 
 class UserTest {
@@ -79,5 +80,17 @@ class UserTest {
         // when & then
         assertThatThrownBy(() -> User.create(name, loginId, password, null))
                 .isInstanceOf(ValidationException.class);
+    }
+
+    @Test
+    void 사용자의_비밀번호가_일치하는지_반환한다(){
+        // given
+        String validPassword = "1234";
+        String invalidPassword = "12345";
+        User user = UserFixture.createDefaultUser();
+
+        // when & then
+        assertThat(user.matchPassword(validPassword)).isTrue();
+        assertThat(user.matchPassword(invalidPassword)).isFalse();
     }
 }
