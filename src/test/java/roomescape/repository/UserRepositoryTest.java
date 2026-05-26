@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import roomescape.domain.User;
 import roomescape.domain.fixture.UserFixture;
 
-class UserRepositoryTest extends BaseRepositoryTest {
+class UserRepositoryTest {
     @Autowired
     private UserRepository userRepository;
 
@@ -27,9 +27,9 @@ class UserRepositoryTest extends BaseRepositoryTest {
         User user = UserFixture.createDefaultUser();
 
         // when
-        User saved = userRepository.save(user);
+        userRepository.save(user);
 
         // then
-        assertThat(userRepository.findById(saved.getId())).isPresent();
+        assertThat(userRepository.findById(user.getId())).isPresent();
     }
 }
